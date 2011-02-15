@@ -19,8 +19,10 @@ This package contains python.el
   Currently it implements:
    + Syntax highlighting
    + Solid (auto)indentation support
-   + auto-detection of indentation levels for current file (stolen
-     without guilt from GNU/Emacs' original python.el)
+   + auto-detection of indentation levels for current file
+   + Triple quoted strings support (stolen without guilt from
+     GNU/Emacs' original python.el)
+   + Fancy variable assignment colorization
    + Movement commands you'll expect from a major-mode.
    + Python shell integration (not only for Python 2 but also Python 3!)
    + Python shell completion (Same as above!)
@@ -34,7 +36,7 @@ This package contains python.el
    + add-log-current-defun support
    + hideshow support
    + outline support
-   + Nice fill paragraph support
+   + fill paragraph
 
   The code is well organized in parts with some clean sensitive
   naming. While I did the best effort to keep the code as clean as
