@@ -2,11 +2,11 @@ This package contains python.el
 
 * Info
 
-  Author: Fabián Ezequiel Gallina
-  Contact: fabian at anue dot biz
-  Project homepage: http://github.com/fgallina/python.el
-  My Blog: http://www.from-the-cloud.com
-  Downloads page: http://github.com/fgallina/python.el/downloads
+  + Author: Fabián Ezequiel Gallina
+  + Contact: fabian at anue dot biz
+  + Project homepage: http://github.com/fgallina/python.el
+  + My Blog: http://www.from-the-cloud.com
+  + Downloads page: http://github.com/fgallina/python.el/downloads
 
 * Introduction
 
@@ -57,8 +57,8 @@ This package contains python.el
   (require 'python)
   #+END_EXAMPLE
 
-  For installation refer to python.el and after that just a
-  describe-mode when editing a python file should be enough :)
+  *M-x describe-mode* when editing a python file should be enough to
+  get some good overview about what this major-mode is all about :)
 
 * Bug Reports
 
