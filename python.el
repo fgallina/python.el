@@ -748,7 +748,8 @@ With numeric ARG, just insert that many colons. With
   (and (not arg)
        (not (nth 8 (syntax-ppss)))
        (eolp)
-       (save-excursion (back-to-indentation) (python-indent-line nil))))
+       (> (current-indentation) (python-indent-calculate-indentation))
+       (save-excursion (back-to-indentation) (python-indent-dedent-line))))
 (put 'python-electric-colon 'delete-selection t)
 
 (defun python-indent-shift-left (start end &optional count)
