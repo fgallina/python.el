@@ -237,7 +237,7 @@
          (or "and" "del" "from" "not" "while" "as" "elif" "global" "or" "with"
              "assert" "else" "if" "pass" "yield" "break" "except" "import"
              "print" "class" "exec" "in" "raise" "continue" "finally" "is"
-             "return" "def" "for" "lambda" "try" "self")
+             "return" "def" "for" "lambda" "try")
          symbol-end)
     ;; functions
     (,(rx symbol-start "def" (1+ space) (group (1+ (or word ?_))))
@@ -281,7 +281,7 @@
                "iter" "len" "license" "list" "locals" "long" "map" "max" "min"
                "next" "object" "oct" "open" "ord" "pow" "print" "property" "quit"
                "range" "raw_input" "reduce" "reload" "repr" "reversed" "round"
-               "set" "setattr" "slice" "sorted" "staticmethod" "str" "sum"
+               "self" "set" "setattr" "slice" "sorted" "staticmethod" "str" "sum"
                "super" "tuple" "type" "unichr" "unicode" "vars" "xrange" "zip"
                "True" "False" "Ellipsis")) symbol-end)
      (1 font-lock-builtin-face))
