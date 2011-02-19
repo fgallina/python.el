@@ -138,6 +138,7 @@
 (defvar python-mode-map
   (let ((map (make-sparse-keymap)))
     ;; Indent specific
+    (define-key map ":" 'python-electric-colon)
     (define-key map "\177" 'python-indent-dedent-line-backspace)
     (define-key map (kbd "<backtab>") 'python-indent-dedent-line)
     (define-key map "\C-c<" 'python-indent-shift-left)
@@ -737,6 +738,18 @@ Called from a program, START and END specify the region to indent."
 	      (indent-to (python-indent-calculate-indentation)))))
       (forward-line 1))
     (move-marker end nil)))
+
+(defun python-electric-colon (arg)
+  "Insert a colon and maybe outdent the line if it is a statement like `else'.
+With numeric ARG, just insert that many colons. With
+\\[universal-argument], just insert a single colon."
+  (interactive "*P")
+  (self-insert-command (if (not (integerp arg)) 1 arg))
+  (and (not arg)
+       (not (nth 8 (syntax-ppss)))
+       (eolp)
+       (save-excursion (back-to-indentation) (python-indent-line nil))))
+(put 'python-electric-colon 'delete-selection t)
 
 (defun python-indent-shift-left (start end &optional count)
   "Shift lines contained in region START END by COUNT columns to the left.
