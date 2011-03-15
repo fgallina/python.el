@@ -117,7 +117,7 @@
 ;; running.
 
 ;; Code check: Check the current file for errors using
-;; `python-check-command'
+;; `python-check'
 
 ;; Eldoc: returns documentation for object at point by using the
 ;; inferior python subprocess to inspect its documentation.  As you
