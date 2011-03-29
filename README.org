@@ -7,6 +7,7 @@ This package contains python.el
   + Project homepage: http://github.com/fgallina/python.el
   + My Blog: http://www.from-the-cloud.com
   + Downloads page: http://github.com/fgallina/python.el/downloads
+  + IRC: #python.el at freenode!
 
 * Introduction
 
@@ -17,6 +18,11 @@ This package contains python.el
   python editing while keeping it simple.
 
   Currently it implements:
+
+;; Implements Syntax highlighting, Indentation, Movement, Shell
+;; interaction, Shell completion, Pdb tracking, Symbol completion,
+;; Skeletons, FFAP, Code Check, Eldoc, imenu.
+
    + Syntax highlighting
    + Solid (auto)indentation support
    + auto-detection of indentation levels for current file
@@ -31,8 +37,14 @@ This package contains python.el
      process and valid code in the current buffer are needed (Don't
      blame me, it's like that in every python-mode I know). Notice I
      don't recommend this thing, use ropemacs instead
+   + Skeletons with a tight integration with dabbrev out of the box
+   + FFAP (Find Filename At Point), click on an import statement and
+     go to the module definition.
+   + Code check via pychecker by default (this is customizable of
+     course)
    + Eldoc support (this suffers the same drawbacks as the symbol
      completion, but it's the only sane way to do it from Elisp)
+   + imenu support to easily navigate your code
    + add-log-current-defun support
    + hideshow support
    + outline support
