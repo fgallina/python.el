@@ -3,6 +3,8 @@
 ;; Copyright (C) 2010, 2011 Free Software Foundation, Inc.
 
 ;; Author: Fabián E. Gallina <fabian@anue.biz>
+;; URL: https://github.com/fgallina/python.el
+;; Version: 0.23.1
 ;; Maintainer: FSF
 ;; Created: Jul 2010
 ;; Keywords: languages
@@ -323,8 +325,12 @@
     (,(rx symbol-start "class" (1+ space) (group (1+ (or word ?_))))
      (1 font-lock-type-face))
     ;; Constants
-    (,(rx symbol-start (group "None" symbol-end))
-     (1 font-lock-constant-face))
+    (,(rx symbol-start
+          ;; copyright, license, credits, quit, exit are added by the
+          ;; site module and since they are not intended to be used in
+          ;; programs they are not added here either.
+          (or "None" "True" "False" "Ellipsis" "__debug__" "NotImplemented")
+          symbol-end) . font-lock-constant-face)
     ;; Decorators.
     (,(rx line-start (* (any " \t")) (group "@" (1+ (or word ?_))
                                             (0+ "." (1+ (or word ?_)))))
@@ -337,7 +343,7 @@
               "FutureWarning" "GeneratorExit" "IOError" "ImportError"
               "ImportWarning" "IndentationError" "IndexError" "KeyError"
               "KeyboardInterrupt" "LookupError" "MemoryError" "NameError"
-              "NotImplemented" "NotImplementedError" "OSError" "OverflowError"
+              "NotImplementedError" "OSError" "OverflowError"
               "PendingDeprecationWarning" "ReferenceError" "RuntimeError"
               "RuntimeWarning" "StandardError" "StopIteration" "SyntaxError"
               "SyntaxWarning" "SystemError" "SystemExit" "TabError" "TypeError"
@@ -346,22 +352,20 @@
               "UserWarning" "ValueError" "Warning" "ZeroDivisionError")
           symbol-end) . font-lock-type-face)
     ;; Builtins
-    (,(rx (or line-start (not (any ". \t"))) (* (any " \t")) symbol-start
-	  (group
-           (or "_" "__debug__" "__doc__" "__import__" "__name__" "__package__"
-               "abs" "all" "any" "apply" "basestring" "bin" "bool" "buffer"
-               "bytearray" "bytes" "callable" "chr" "classmethod" "cmp" "coerce"
-               "compile" "complex" "copyright" "credits" "delattr" "dict" "dir"
-               "divmod" "enumerate" "eval" "execfile" "exit" "file" "filter"
-               "float" "format" "frozenset" "getattr" "globals" "hasattr" "hash"
-               "help" "hex" "id" "input" "int" "intern" "isinstance" "issubclass"
-               "iter" "len" "license" "list" "locals" "long" "map" "max" "min"
-               "next" "object" "oct" "open" "ord" "pow" "print" "property" "quit"
-               "range" "raw_input" "reduce" "reload" "repr" "reversed" "round"
-               "set" "setattr" "slice" "sorted" "staticmethod" "str" "sum"
-               "super" "tuple" "type" "unichr" "unicode" "vars" "xrange" "zip"
-               "True" "False" "Ellipsis")) symbol-end)
-     (1 font-lock-builtin-face))
+    (,(rx symbol-start
+          (or "_" "__doc__" "__import__" "__name__" "__package__" "abs" "all"
+              "any" "apply" "basestring" "bin" "bool" "buffer" "bytearray"
+              "bytes" "callable" "chr" "classmethod" "cmp" "coerce" "compile"
+              "complex" "delattr" "dict" "dir" "divmod" "enumerate" "eval"
+              "execfile" "file" "filter" "float" "format" "frozenset"
+              "getattr" "globals" "hasattr" "hash" "help" "hex" "id" "input"
+              "int" "intern" "isinstance" "issubclass" "iter" "len" "list"
+              "locals" "long" "map" "max" "min" "next" "object" "oct" "open"
+              "ord" "pow" "print" "property" "range" "raw_input" "reduce"
+              "reload" "repr" "reversed" "round" "set" "setattr" "slice"
+              "sorted" "staticmethod" "str" "sum" "super" "tuple" "type"
+              "unichr" "unicode" "vars" "xrange" "zip")
+          symbol-end) . font-lock-builtin-face)
     ;; asignations
     ;; support for a = b = c = 5
     (,(lambda (limit)
@@ -1924,10 +1928,28 @@ Runs COMMAND, a shell command, as if by `compile'.  See
 (defvar python-eldoc-setup-code
   "def __PYDOC_get_help(obj):
     try:
-        import pydoc
+        import inspect
         if hasattr(obj, 'startswith'):
             obj = eval(obj, globals())
-        doc = pydoc.getdoc(obj)
+        doc = inspect.getdoc(obj)
+        if not doc and callable(obj):
+            target = None
+            if inspect.isclass(obj) and hasattr(obj, '__init__'):
+                target = obj.__init__
+                objtype = 'class'
+            else:
+                target = obj
+                objtype = 'def'
+            if target:
+                args = inspect.formatargspec(
+                    *inspect.getargspec(target)
+                )
+                name = obj.__name__
+                doc = '{objtype} {name}{args}'.format(
+                    objtype=objtype, name=name, args=args
+                )
+        else:
+            doc = doc.splitlines()[0]
     except:
         doc = ''
     try:
@@ -2000,16 +2022,7 @@ Interactively, prompt for symbol."
     (let ((process (python-shell-get-process)))
       (if (not process)
           (message "Eldoc needs an inferior Python process running.")
-        (let ((temp-buffer-show-hook
-               (lambda ()
-                 (toggle-read-only 1)
-                 (setq view-return-to-alist
-                       (list (cons (selected-window) help-return-method))))))
-          (with-output-to-temp-buffer (help-buffer)
-            (with-current-buffer standard-output
-              (insert
-               (python-eldoc--get-doc-at-point symbol process))
-              (help-print-return-message)))))))
+        (message (python-eldoc--get-doc-at-point symbol process)))))
 
 
 ;;; Imenu
@@ -2138,15 +2151,18 @@ This function is compatible to be used as
 `add-log-current-defun-function' since it returns nil if point is
 not inside a defun."
   (let ((names '())
-        (min-indent))
+        (min-indent)
+        (first-run t))
     (save-restriction
       (widen)
       (save-excursion
         (goto-char (line-end-position))
         (forward-comment -9999)
+        (setq min-indent (current-indentation))
         (while (python-beginning-of-defun-function 1 t)
-          (when (or (not min-indent)
-                    (< (current-indentation) min-indent))
+          (when (or (< (current-indentation) min-indent)
+                    first-run)
+            (setq first-run nil)
             (setq min-indent (current-indentation))
             (looking-at python-nav-beginning-of-defun-regexp)
             (setq names (cons
@@ -2336,6 +2352,8 @@ if that value is non-nil."
 	       `(python-mode "^\\s-*\\(?:def\\|class\\)\\>" nil "#"
                              ,(lambda (arg)
                                 (python-end-of-defun-function)) nil))
+
+  (set (make-local-variable 'mode-require-final-newline) t)
 
   (set (make-local-variable 'outline-regexp)
        (python-rx (* space) block-start))
