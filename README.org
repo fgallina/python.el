@@ -19,9 +19,9 @@ This package contains python.el
 
   Currently it implements:
 
-;; Implements Syntax highlighting, Indentation, Movement, Shell
-;; interaction, Shell completion, Pdb tracking, Symbol completion,
-;; Skeletons, FFAP, Code Check, Eldoc, imenu.
+  Syntax highlighting, Indentation, Movement, Shell interaction, Shell
+  completion, Shell virtualenv support, Pdb tracking, Symbol
+  completion, Skeletons, FFAP, Code Check, Eldoc, imenu.
 
    + Syntax highlighting
    + Solid (auto)indentation support
@@ -32,6 +32,7 @@ This package contains python.el
    + Movement commands you'll expect from a major-mode.
    + Python shell integration (not only for Python 2 but also Python 3!)
    + Python shell completion (Same as above!)
+   + Python shell virtualenv support (as simple as setting a variable!)
    + PDB Tracking (it even supports ipdb!)
    + Symbol completion that sucks because a running inferior shell
      process and valid code in the current buffer are needed (Don't
