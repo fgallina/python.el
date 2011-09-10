@@ -1600,47 +1600,71 @@ else:
   :group 'python
   :safe 'stringp)
 
-(defun python-shell-completion--get-completions (input process)
+(defcustom python-shell-module-completion-string-code ""
+  "Python code used to get a string of completions separated by
+  semicolons on a module import line.
+
+For IPython v0.11, add the following line to
+`python-shell-completion-setup-code':
+
+from IPython.core.completerlib import module_completion
+
+and use the following as the value of this variable:
+
+';'.join(module_completion('''%s'''))\n"
+  :type 'string
+  :group 'python
+  :safe 'stringp)
+
+(defvar python-shell-import-line-regexp "^\\(from\\|import\\)[ \t]")
+
+(defun python-shell-completion--get-completions (input process completion-code)
   "Retrieve available completions for INPUT using PROCESS."
   (with-current-buffer (process-buffer process)
     (let ((completions (python-shell-send-string-no-output
-                        (format python-shell-completion-string-code input)
-                        process)))
+                        (format completion-code input) process)))
       (when (> (length completions) 2)
         (split-string completions "^'\\|^\"\\|;\\|'$\\|\"$" t)))))
 
-(defun python-shell-completion--get-completion (input completions)
-  "Get completion for INPUT using COMPLETIONS."
-  (let ((completion (when completions
-                      (try-completion input completions))))
-    (cond ((eq completion t)
-           input)
-          ((null completion)
-           (message "Can't find completion for \"%s\"" input)
-           (ding)
-           input)
+(defun python-shell-completion--do-completion-at-point (process)
+  "Do completion for INPUT using COMPLETIONS."
+  (with-syntax-table python-dotty-syntax-table
+    (let* ((line (substring-no-properties
+		  (buffer-substring (point-at-bol) (point)) nil nil))
+	   (input (substring-no-properties
+		   (or (comint-word (current-word)) "") nil nil))
+	   (completions
+	    (if (and (> (length python-shell-module-completion-string-code) 0)
+		     (string-match python-shell-import-line-regexp line))
+		(python-shell-completion--get-completions
+		 line process python-shell-module-completion-string-code)
+	      (python-shell-completion--get-completions
+	       input process python-shell-completion-string-code)))
+	   (completion (when completions
+			 (try-completion input completions))))
+      (cond ((eq completion t)
+           t)
+	    ((null completion)
+	     (message "Can't find completion for \"%s\"" input)
+	     (ding)
+           nil)
           ((not (string= input completion))
-           completion)
+           (progn (delete-char (- (length input)))
+		  (insert completion)
+		  t))
           (t
-           (message "Making completion list...")
            (with-output-to-temp-buffer "*Python Completions*"
              (display-completion-list
               (all-completions input completions)))
-           input))))
+           t)))))
 
 (defun python-shell-completion-complete-at-point ()
   "Perform completion at point in inferior Python process."
   (interactive)
-  (with-syntax-table python-dotty-syntax-table
-    (when (and comint-last-prompt-overlay
-               (> (point-marker) (overlay-end comint-last-prompt-overlay)))
-      (let* ((process (get-buffer-process (current-buffer)))
-             (input (substring-no-properties
-                     (or (comint-word (current-word)) "") nil nil)))
-        (delete-char (- (length input)))
-        (insert
-         (python-shell-completion--get-completion
-          input (python-shell-completion--get-completions input process)))))))
+  (and comint-last-prompt-overlay
+       (> (point-marker) (overlay-end comint-last-prompt-overlay))
+       (python-shell-completion--do-completion-at-point
+	(get-buffer-process (current-buffer)))))
 
 (defun python-shell-completion-complete-or-indent ()
   "Complete or indent depending on the context.
@@ -1749,15 +1773,7 @@ inferior python process is updated properly."
   (let ((process (python-shell-get-process)))
     (if (not process)
         (error "Completion needs an inferior Python process running")
-      (with-syntax-table python-dotty-syntax-table
-        (let* ((input (substring-no-properties
-                       (or (comint-word (current-word)) "") nil nil))
-               (completions (python-shell-completion--get-completions
-                             input process)))
-          (delete-char (- (length input)))
-          (insert
-           (python-shell-completion--get-completion
-            input completions)))))))
+      (python-shell-completion--do-completion-at-point process))))
 
 (add-to-list 'debug-ignored-errors "^Completion needs an inferior Python process running.")
 
