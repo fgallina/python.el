@@ -1618,8 +1618,9 @@ and use the following as the value of this variable:
 Argument COMPLETION-CODE is the python code used to get
 completions on the current context."
   (with-current-buffer (process-buffer process)
-    (let ((completions (python-shell-send-string-no-output
-                        (format completion-code input) process)))
+    (let ((completions (python-util-strip
+			(python-shell-send-string-no-output
+			 (format completion-code input) process))))
       (when (> (length completions) 2)
         (split-string completions "^'\\|^\"\\|;\\|'$\\|\"$" t)))))
 
@@ -1635,8 +1636,9 @@ completions on the current context."
 		     (string-match "^\\(from\\|import\\)[ \t]" line))
 		(python-shell-completion--get-completions
 		 line process python-shell-module-completion-string-code)
-	      (python-shell-completion--get-completions
-	       input process python-shell-completion-string-code)))
+	      (and (> (length input) 0)
+		   (python-shell-completion--get-completions
+		    input process python-shell-completion-string-code))))
 	   (completion (when completions
 			 (try-completion input completions))))
       (cond ((eq completion t)
@@ -2529,6 +2531,15 @@ to \"^python-\"."
 	       (cdr pair))))
    (buffer-local-variables from-buffer)))
 
+(defun python-util-strip(string &optional regexp)
+  "Strip trailing spaces and carriage returns from STRING.
+Default regexp used is \"[ \f\t\n\r\v]\" but can be
+overwritten by specifying a regexp as a second argument."
+  (let ((regexp (or regexp "[ \f\t\n\r\v]")))
+    (while (and (> (length string) 0)
+                (string-match regexp (substring string -1)))
+      (setq string (substring string 0 -1)))
+    string))
 
 ;;;###autoload
 (define-derived-mode python-mode fundamental-mode "Python"
