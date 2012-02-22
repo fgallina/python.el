@@ -84,11 +84,15 @@
 ;;  python-shell-completion-string-code
 ;;    "';'.join(get_ipython().Completer.all_completions('''%s'''))\n")
 
-;; For iPython 0.10 everything would be the same except for
-;; `python-shell-completion-string-code':
+;; For iPython 0.10, it would be:
 
-;; (setq python-shell-completion-string-code
-;;       "';'.join(__IP.complete('''%s'''))\n")
+;; (setq
+;;  python-shell-interpreter "ipython"
+;;  python-shell-interpreter-args ""
+;;  python-shell-prompt-regexp "In \\[[0-9]+\\]: "
+;;  python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: "
+;;  python-shell-completion-string-code
+;;    "';'.join(__IP.complete('''%s'''))\n")
 
 ;; Unfortunately running iPython on Windows needs some more tweaking.
 ;; The way you must set `python-shell-interpreter' and
