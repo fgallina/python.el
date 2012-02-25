@@ -1787,6 +1787,34 @@ completions on the current context."
             (all-completions input candidates)))
          t)))
 
+(defun python-shell-completion-func-ido (input completion candidates)
+  "Choose candidates using `ido-completing-read'"
+  (cond ((eq completion t)
+         t)
+        ((null completion)
+         (message "Can't find completion for \"%s\"" input)
+         (ding)
+         nil)
+        ((not (string= input completion))
+         (delete-char (- (length input)))
+         (insert completion)
+         t)
+        (t
+         (message "Making completion list...")
+         (let* ((input-len (length input))
+                (tails
+                 (mapcar
+                  (lambda (c) (substring c input-len))
+                  (all-completions input candidates)))
+                (choice
+                 (condition-case nil
+                     (ido-completing-read input tails)
+                   (quit nil))))
+           (if choice
+               (progn (insert choice)
+                      t)
+             nil)))))
+
 (defun python-shell-completion-complete-at-point ()
   "Perform completion at point in inferior Python process."
   (interactive)
