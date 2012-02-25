@@ -1815,6 +1815,32 @@ completions on the current context."
                       t)
              nil)))))
 
+(defun python-shell-completion-func-auto-complete (input completion candidates)
+  "Choose candidates using `auto-complete'"
+  (cond ((eq completion t)
+         t)
+        ((null completion)
+         (message "Can't find completion for \"%s\"" input)
+         (ding)
+         nil)
+        ((not (string= input completion))
+         (delete-char (- (length input)))
+         (insert completion)
+         t)
+        ((string-match "\\.$" input)
+         (message "Need at least one letter after a dot")
+         nil)
+        (t
+         (let* ((nodots
+                 (mapcar
+                  (lambda (c) (replace-in-string c "^.*\\." ""))
+                  (all-completions input candidates))))
+           (with-syntax-table python-mode-syntax-table
+             (auto-complete
+              '(((candidates . nodots) (symbol . "s")))))
+           (message "Making completion list...done")
+           t))))
+
 (defun python-shell-completion-complete-at-point ()
   "Perform completion at point in inferior Python process."
   (interactive)
