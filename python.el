@@ -207,7 +207,8 @@
   ;; Avoid compiler warnings
   (defvar view-return-to-alist)
   (defvar compilation-error-regexp-alist)
-  (defvar outline-heading-end-regexp))
+  (defvar outline-heading-end-regexp)
+  (defun auto-complete (&optional args)))
 
 (autoload 'comint-mode "comint")
 
@@ -1707,6 +1708,12 @@ and use the following as the value of this variable:
   :type 'string
   :group 'python)
 
+(defcustom python-shell-completion-func
+  #'python-shell-completion-func-default
+  "A callable function for choosing a completion from candidates"
+  :type 'symbol
+  :group 'python)
+
 (defvar python-shell-completion-original-window-configuration nil)
 
 (defun python-shell-completion--get-completions (input process completion-code)
@@ -1752,29 +1759,88 @@ completions on the current context."
                   line process completion-code)))
            (completion (when completions
                          (try-completion input completions))))
-      (cond ((eq completion t)
-             (if (eq this-command last-command)
-                 (when python-shell-completion-original-window-configuration
-                   (set-window-configuration
-                    python-shell-completion-original-window-configuration)))
-             (setq python-shell-completion-original-window-configuration nil)
-             t)
-            ((null completion)
-             (message "Can't find completion for \"%s\"" input)
-             (ding)
-             nil)
-            ((not (string= input completion))
-             (progn (delete-char (- (length input)))
-                    (insert completion)
-                    t))
-            (t
-             (unless python-shell-completion-original-window-configuration
-               (setq python-shell-completion-original-window-configuration
-                     (current-window-configuration)))
-             (with-output-to-temp-buffer "*Python Completions*"
-               (display-completion-list
-                (all-completions input completions)))
-             t)))))
+      (funcall python-shell-completion-func
+               input completion completions))))
+
+(defun python-shell-completion-func-default (input completion candidates)
+  "Choose candidates shown in the *Python Completions* window"
+  (cond ((eq completion t)
+         (if (eq this-command last-command)
+             (when python-shell-completion-original-window-configuration
+               (set-window-configuration
+                python-shell-completion-original-window-configuration)))
+         (setq python-shell-completion-original-window-configuration nil)
+         t)
+        ((null completion)
+         (message "Can't find completion for \"%s\"" input)
+         (ding)
+         nil)
+        ((not (string= input completion))
+         (delete-char (- (length input)))
+         (insert completion)
+         t)
+        (t
+         (unless python-shell-completion-original-window-configuration
+           (setq python-shell-completion-original-window-configuration
+                 (current-window-configuration)))
+         (with-output-to-temp-buffer "*Python Completions*"
+           (display-completion-list
+            (all-completions input candidates)))
+         t)))
+
+(defun python-shell-completion-func-ido (input completion candidates)
+  "Choose candidates using `ido-completing-read'"
+  (cond ((eq completion t)
+         t)
+        ((null completion)
+         (message "Can't find completion for \"%s\"" input)
+         (ding)
+         nil)
+        ((not (string= input completion))
+         (delete-char (- (length input)))
+         (insert completion)
+         t)
+        (t
+         (message "Making completion list...")
+         (let* ((input-len (length input))
+                (tails
+                 (mapcar
+                  (lambda (c) (substring c input-len))
+                  (all-completions input candidates)))
+                (choice
+                 (condition-case nil
+                     (ido-completing-read input tails)
+                   (quit nil))))
+           (if choice
+               (progn (insert choice)
+                      t)
+             nil)))))
+
+(defun python-shell-completion-func-auto-complete (input completion candidates)
+  "Choose candidates using `auto-complete'"
+  (cond ((eq completion t)
+         t)
+        ((null completion)
+         (message "Can't find completion for \"%s\"" input)
+         (ding)
+         nil)
+        ((not (string= input completion))
+         (delete-char (- (length input)))
+         (insert completion)
+         t)
+        ((string-match "\\.$" input)
+         (message "Need at least one letter after a dot")
+         nil)
+        (t
+         (let* ((nodots
+                 (mapcar
+                  (lambda (c) (replace-regexp-in-string "^.*\\." "" c))
+                  (all-completions input candidates))))
+           (with-syntax-table python-mode-syntax-table
+             (auto-complete
+              '(((candidates . nodots) (symbol . "s")))))
+           (message "Making completion list...done")
+           t))))
 
 (defun python-shell-completion-complete-at-point ()
   "Perform completion at point in inferior Python process."
