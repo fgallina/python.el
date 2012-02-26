@@ -1833,7 +1833,7 @@ completions on the current context."
         (t
          (let* ((nodots
                  (mapcar
-                  (lambda (c) (replace-in-string c "^.*\\." ""))
+                  (lambda (c) (replace-regexp-in-string "^.*\\." "" c))
                   (all-completions input candidates))))
            (with-syntax-table python-mode-syntax-table
              (auto-complete
