@@ -207,7 +207,8 @@
   ;; Avoid compiler warnings
   (defvar view-return-to-alist)
   (defvar compilation-error-regexp-alist)
-  (defvar outline-heading-end-regexp))
+  (defvar outline-heading-end-regexp)
+  (defun auto-complete (&optional args)))
 
 (autoload 'comint-mode "comint")
 
