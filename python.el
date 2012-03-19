@@ -1121,30 +1121,40 @@ With negative argument, move backward repeatedly to start of sentence."
     (forward-line -1)
     (setq arg (1+ arg))))
 
-(defun python-nav-list-defun-positions (&optional include-type)
+(defvar python-nav-defun-positions-cache nil)
+
+(defun python-nav-list-defun-positions (&optional include-type force-rescan-p)
   "Make an Alist of defun names and point markers for current buffer.
 When optional argument INCLUDE-TYPE is non-nil the type is
 included the defun name."
-  (let ((defs))
-    (save-restriction
-      (widen)
-      (save-excursion
-        (goto-char (point-max))
-        (while (re-search-backward python-nav-beginning-of-defun-regexp nil t)
-          (when (and (not (python-info-ppss-context 'string))
-                     (not (python-info-ppss-context 'comment))
-                     (not (python-info-ppss-context 'parent)))
-            (add-to-list
-             'defs (cons
-                    (python-info-current-defun include-type)
-                    (point-marker)))))
-        defs))))
+  (let* ((key (current-buffer))
+	 (cached-val (cdr (assq key python-nav-defun-positions-cache)))
+	 defs)
+    (if (and cached-val (not force-rescan-p))
+	cached-val
+      (save-restriction
+	(widen)
+	(save-excursion
+	  (goto-char (point-max))
+	  (while (re-search-backward python-nav-beginning-of-defun-regexp nil t)
+	    (when (and (not (python-info-ppss-context 'string))
+		       (not (python-info-ppss-context 'comment))
+		       (not (python-info-ppss-context 'parent)))
+	      (add-to-list
+	       'defs (cons
+		      (python-info-current-defun include-type)
+		      (point-marker))))))
+	(when cached-val
+	  (setq python-nav-defun-positions-cache
+		(assq-delete-all key python-nav-defun-positions-cache)))
+	(add-to-list 'python-nav-defun-positions-cache (cons key defs))
+	defs))))
 
-(defun python-nav-read-defun ()
+(defun python-nav-read-defun (&optional force-rescan-p)
   "Read a defun name of current buffer and return its point marker.
 A cons cell with the form (DEFUN-NAME . POINT-MARKER) is returned
 when defun is completed, else nil."
-  (let ((defs (python-nav-list-defun-positions)))
+  (let ((defs (python-nav-list-defun-positions nil force-rescan-p)))
     (minibuffer-with-setup-hook
         (lambda ()
           (setq minibuffer-completion-table (mapcar 'car defs)))
@@ -1156,9 +1166,10 @@ when defun is completed, else nil."
           (assoc-string stringdef defs))))))
 
 (defun python-nav-jump-to-defun (def)
-  "Jump to the definition of DEF in current file."
+  "Jump to the definition of DEF in current file.
+Locations are cached; use a C-u prefix argument to force a rescan."
   (interactive
-   (list (python-nav-read-defun)))
+   (list (python-nav-read-defun current-prefix-arg)))
   (when (not (called-interactively-p 'interactive))
     (setq def (assoc-string def (python-nav-list-defun-positions))))
   (let ((def-marker (cdr def)))
