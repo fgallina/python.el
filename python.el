@@ -253,6 +253,9 @@
     ;; Shell interaction
     (define-key map "\C-c\C-s" 'python-shell-send-string)
     (define-key map "\C-c\C-r" 'python-shell-send-region)
+    (define-key map (kbd "C-<up>") 'python-backward-cell)
+    (define-key map (kbd "C-<down>") 'python-forward-cell)
+    (define-key map (kbd "<C-return>") 'python-shell-send-cell)
     (define-key map "\C-\M-x" 'python-shell-send-defun)
     (define-key map "\C-c\C-c" 'python-shell-send-buffer)
     (define-key map "\C-c\C-l" 'python-shell-send-file)
@@ -1166,6 +1169,55 @@ when defun is completed, else nil."
       (goto-char (marker-position def-marker))
       (back-to-indentation))))
 
+(defcustom python-cell-delimiter-regex "^##"
+  "Delimiter used for detecting the cell boundaries of code cells/blocks."
+  :type 'string
+  :group 'python
+  :safe 'stringp)
+
+(defun python-forward-cell  (&optional arg)
+  (interactive "p")
+  ;; TODO: prefix support
+
+  (if (re-search-forward python-cell-delimiter-regex nil t)
+      (progn (end-of-line)
+             (forward-char 1))
+    (goto-char (point-max))))
+
+(defun python-backward-cell  (&optional arg)
+  (interactive "p")
+  ;; TODO: prefix support
+
+  ;; check if it finds a line matched by the delimiter regex before
+  ;; the actual point
+  (and (save-excursion (re-search-backward python-cell-delimiter-regex
+                                           nil t))
+       (= (match-beginning 0) (save-excursion
+                                (forward-char -1) (beginning-of-line) (point)))
+       (goto-char (match-beginning 0)))
+
+  (if (> (point) (point-min))
+      (forward-char -1))
+  (if (re-search-backward python-cell-delimiter-regex nil t)
+      ;; We found one--move to the end of it.
+      (progn (goto-char (match-end 0))
+             (end-of-line)
+             (forward-char 1))
+    ;; We found nothing--go to beg of buffer.
+    (goto-char (point-min))))
+
+(defun python-beginning-of-cell (&optional arg)
+  (interactive "p")
+  ;; TODO: prefix support
+
+  (if (re-search-backward python-cell-delimiter-regex nil t)
+      ;; We found one--move to the end of it.
+      (progn (goto-char (match-end 0))
+             (end-of-line)
+             (forward-char 1))
+    ;; We found nothing--go to beg of buffer.
+    (goto-char (point-min))))
+
 
 ;;; Shell integration
 
@@ -1593,6 +1645,24 @@ Returns the output.  See `python-shell-send-string-no-output'."
   (interactive "r")
   (let ((deactivate-mark nil))
     (python-shell-send-string (buffer-substring start end) nil t)))
+
+
+(defun python-shell-send-cell ()
+  "Send the cell the cursor is in to the inferior Python process."
+  (interactive)
+  (let (
+        (start (save-excursion (python-beginning-of-cell)
+                               (point)))
+        (end (save-excursion (python-forward-cell)
+                             (forward-char -1)
+                             (beginning-of-line)
+                             (forward-char -1)
+                             (point))))
+    ;; (goto-char end)
+    ;; (push-mark start)
+    ;; (activate-mark)))
+    (python-shell-send-region start end)))
+
 
 (defun python-shell-send-buffer ()
   "Send the entire buffer to inferior Python process."
