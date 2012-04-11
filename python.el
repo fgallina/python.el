@@ -1777,7 +1777,7 @@ completions on the current context."
                          (length python-shell-completion-module-string-code) 0)
                         (string-match
                          (concat "^" python-shell-prompt-regexp) prompt)
-                        (string-match "^\\(from\\|import\\)[ \t]" line))
+                        (string-match "^[ \t]*\\(from\\|import\\)[ \t]" line))
                    'import)
                   ((string-match
                     (concat "^" python-shell-prompt-regexp) prompt)
@@ -1790,7 +1790,9 @@ completions on the current context."
 	      ('default python-shell-completion-string-code)
 	      (t nil)))
 	   (input
-	    (if (eq completion-context 'import) line input))
+	    (if (eq completion-context 'import)
+		(replace-regexp-in-string "^[ \t]+" "" line)
+	      input))
            (completions
             (and completion-code (> (length input) 0)
                  (python-shell-completion--get-completions
