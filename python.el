@@ -1199,11 +1199,9 @@ when defun is completed, else nil."
   (if (> (point) (point-min))
       (forward-char -1))
   (if (re-search-backward python-cell-delimiter-regex nil t)
-      ;; We found one--move to the end of it.
       (progn (goto-char (match-end 0))
              (end-of-line)
              (forward-char 1))
-    ;; We found nothing--go to beg of buffer.
     (goto-char (point-min))))
 
 (defun python-beginning-of-cell (&optional arg)
@@ -1211,12 +1209,19 @@ when defun is completed, else nil."
   ;; TODO: prefix support
 
   (if (re-search-backward python-cell-delimiter-regex nil t)
-      ;; We found one--move to the end of it.
       (progn (goto-char (match-end 0))
              (end-of-line)
              (forward-char 1))
-    ;; We found nothing--go to beg of buffer.
     (goto-char (point-min))))
+
+(defun python-end-of-cell (&optional arg)
+  (interactive "p")
+  ;; TODO: prefix support
+
+  (if (re-search-forward python-cell-delimiter-regex nil t)
+      (progn (goto-char (match-beginning 0))
+             (forward-char -1))
+    (goto-char (point-max))))
 
 
 ;;; Shell integration
@@ -1653,10 +1658,7 @@ Returns the output.  See `python-shell-send-string-no-output'."
   (let (
         (start (save-excursion (python-beginning-of-cell)
                                (point)))
-        (end (save-excursion (python-forward-cell)
-                             (forward-char -1)
-                             (beginning-of-line)
-                             (forward-char -1)
+        (end (save-excursion (python-end-of-cell)
                              (point))))
     ;; (goto-char end)
     ;; (push-mark start)
