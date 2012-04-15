@@ -1169,7 +1169,7 @@ when defun is completed, else nil."
       (goto-char (marker-position def-marker))
       (back-to-indentation))))
 
-(defcustom python-cell-delimiter-regex "^##"
+(defcustom python-cell-delimiter-regexp "^##"
   "Delimiter used for detecting the cell boundaries of code cells/blocks."
   :type 'string
   :group 'python
@@ -1179,7 +1179,7 @@ when defun is completed, else nil."
   (interactive "p")
   ;; TODO: prefix support
 
-  (if (re-search-forward python-cell-delimiter-regex nil t)
+  (if (re-search-forward python-cell-delimiter-regexp nil t)
       (progn (end-of-line)
              (forward-char 1))
     (goto-char (point-max))))
@@ -1188,9 +1188,9 @@ when defun is completed, else nil."
   (interactive "p")
   ;; TODO: prefix support
 
-  ;; check if it finds a line matched by the delimiter regex before
+  ;; check if it finds a line matched by the delimiter regexp before
   ;; the actual point
-  (and (save-excursion (re-search-backward python-cell-delimiter-regex
+  (and (save-excursion (re-search-backward python-cell-delimiter-regexp
                                            nil t))
        (= (match-beginning 0) (save-excursion
                                 (forward-char -1) (beginning-of-line) (point)))
@@ -1198,7 +1198,7 @@ when defun is completed, else nil."
 
   (if (> (point) (point-min))
       (forward-char -1))
-  (if (re-search-backward python-cell-delimiter-regex nil t)
+  (if (re-search-backward python-cell-delimiter-regexp nil t)
       (progn (goto-char (match-end 0))
              (end-of-line)
              (forward-char 1))
@@ -1208,7 +1208,7 @@ when defun is completed, else nil."
   (interactive "p")
   ;; TODO: prefix support
 
-  (if (re-search-backward python-cell-delimiter-regex nil t)
+  (if (re-search-backward python-cell-delimiter-regexp nil t)
       (progn (goto-char (match-end 0))
              (end-of-line)
              (forward-char 1))
@@ -1218,7 +1218,7 @@ when defun is completed, else nil."
   (interactive "p")
   ;; TODO: prefix support
 
-  (if (re-search-forward python-cell-delimiter-regex nil t)
+  (if (re-search-forward python-cell-delimiter-regexp nil t)
       (progn (goto-char (match-beginning 0))
              (forward-char -1))
     (goto-char (point-max))))
@@ -2853,8 +2853,14 @@ if that value is non-nil."
   (python-skeleton-add-menu-items)
 
   (when python-indent-guess-indent-offset
-    (python-indent-guess-indent-offset)))
+    (python-indent-guess-indent-offset))
 
+  ;; cell-support for *.py files created with the IPython notebook
+  (when (save-excursion
+          (save-match-data
+            (goto-char (point-min))
+            (re-search-forward "^# <nbformat>" nil t)))
+    (set (make-local-variable 'python-cell-delimiter-regexp) "^# <\\(codecell\\|markdowncell\\)>")))
 
 (provide 'python)
 ;;; python.el ends here
