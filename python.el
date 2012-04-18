@@ -349,6 +349,30 @@ This variant of `rx' supports common python named REGEXPS."
            (rx-to-string (car regexps) t)))))
 
 
+
+(defvar python-cellbreak-face 'python-cellbreak-face
+  "Self reference for cellbreaks.")
+
+(defface python-cellbreak-face
+  (list
+   (list t
+         (list :background (face-background font-lock-comment-face)
+               :foreground (face-foreground font-lock-comment-face)
+               :overline t
+               :bold t)))
+	  "*Face to use for cellbreak lines."
+	  :group 'python)
+
+;; Now make some cellbreak variable faces
+(cond ((facep 'font-comment-face)
+       (copy-face 'font-lock-comment-face 'python-cellbreak-face))
+      (t
+       (make-face 'python-cellbreak-face)))
+(set-face-bold-p 'python-cellbreak-face t)
+(condition-case nil
+    (set-face-attribute 'python-cellbreak-face nil :overline t)
+  (error nil))
+
 ;;; Font-lock and syntax
 (defvar python-font-lock-keywords
   ;; Keywords
@@ -429,6 +453,11 @@ This variant of `rx' supports common python named REGEXPS."
            ;; Extra:
            "__all__" "__doc__" "__name__" "__package__")
           symbol-end) . font-lock-builtin-face)
+    ;; Cell Break
+    (,(rx line-start (* space) (group (and "#" (or (and "#" (* (not (any "\n"))))
+                                                   (and " <" (or "codecell" "markdowncell") ">"))
+                                      line-end)))
+     (1 python-cellbreak-face append))
     ;; asignations
     ;; support for a = b = c = 5
     (,(lambda (limit)
