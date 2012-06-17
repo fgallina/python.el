@@ -865,9 +865,10 @@ to (`nth' `python-indent-current-level' `python-indent-levels')"
           (python-indent-toggle-levels)
         (python-indent-calculate-levels))
     (python-indent-calculate-levels))
-  (beginning-of-line)
-  (delete-horizontal-space)
-  (indent-to (nth python-indent-current-level python-indent-levels))
+  (save-excursion
+    (beginning-of-line)
+    (delete-horizontal-space)
+    (indent-to (nth python-indent-current-level python-indent-levels)))
   (python-info-closing-block-message))
 
 (defun python-indent-line-function ()
