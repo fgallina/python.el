@@ -865,16 +865,25 @@ to (`nth' `python-indent-current-level' `python-indent-levels')"
           (python-indent-toggle-levels)
         (python-indent-calculate-levels))
     (python-indent-calculate-levels))
-  (let ((indent-pos
-         (save-excursion
-           (beginning-of-line)
-           (delete-horizontal-space)
-           (indent-to
-            (nth python-indent-current-level python-indent-levels))
-           (point))))
-    (when (eq (point) (point-at-bol))
-      (goto-char indent-pos)))
-  (python-info-closing-block-message))
+  (let ((column (nth python-indent-current-level python-indent-levels)))
+    (if (save-excursion
+          (and (search-backward-regexp "^[ \t]*\\=" nil t)
+               (progn
+                 (back-to-indentation)
+                 (= (current-column) column))))
+        ;; When in front of the code and the indentation is correct,
+        ;; just go to the indentation and do not modify the buffer and
+        ;; undo history.
+        (back-to-indentation)
+      (let ((indent-pos
+             (save-excursion
+               (beginning-of-line)
+               (delete-horizontal-space)
+               (indent-to column)
+               (point))))
+        (when (eq (point) (point-at-bol))
+          (goto-char indent-pos)))
+      (python-info-closing-block-message))))
 
 (defun python-indent-line-function ()
   "`indent-line-function' for Python mode.
