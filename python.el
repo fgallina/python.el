@@ -857,7 +857,13 @@ When the variable `last-command' is not equal to
 possible indentation levels and saves it in the variable
 `python-indent-levels'.  Afterwards it sets the variable
 `python-indent-current-level' correctly so offset is equal
-to (`nth' `python-indent-current-level' `python-indent-levels')"
+to (`nth' `python-indent-current-level' `python-indent-levels').
+
+When the current indent is correct and the position of the cursor
+is in between the beginning of line and indentation, position of
+the cursor is moved to the indentation but buffer remains
+unmodified.  Further execution of this command cycles indentation
+levels as described above."
   (if (or (and (eq this-command 'indent-for-tab-command)
                (eq last-command this-command))
           force-toggle)
