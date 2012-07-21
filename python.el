@@ -591,7 +591,7 @@ These make `python-indent-calculate-indentation' subtract the value of
                  (goto-char block-end)
                  (python-util-forward-comment)
                  (current-indentation))))
-          (if indentation
+          (if (and indentation (> indentation 0))
               (setq python-indent-offset indentation)
             (message "Can't guess python-indent-offset, using defaults: %s"
                      python-indent-offset)))))))
