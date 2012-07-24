@@ -1945,7 +1945,6 @@ completions on the current context."
 
 (defun python-shell-completion-complete-at-point ()
   "Perform completion at point in inferior Python process."
-  (interactive)
   (and comint-last-prompt-overlay
        (> (point-marker) (overlay-end comint-last-prompt-overlay))
        (python-shell-completion--do-completion-at-point
