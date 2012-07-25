@@ -2059,7 +2059,6 @@ Argument OUTPUT is a string with the output from the comint process."
 For this to work the best as possible you should call
 `python-shell-send-buffer' from time to time so context in
 inferior python process is updated properly."
-  (interactive)
   (let ((process (python-shell-get-process)))
     (if (not process)
         (error "Completion needs an inferior Python process running")
