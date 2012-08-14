@@ -1823,7 +1823,7 @@ When MSG is non-nil messages the first line of STRING."
   (let ((process (or process (python-shell-get-or-create-process)))
         (lines (split-string string "\n" t)))
     (when msg
-      (message (format "Sent: %s..." (nth 0 lines))))
+      (message (replace-regexp-in-string "%" "%%" (format "Sent: %s..." (nth 0 lines)))))
     (if (> (length lines) 1)
         (let* ((temp-file-name (make-temp-file "py"))
                (file-name (or (buffer-file-name) temp-file-name)))
