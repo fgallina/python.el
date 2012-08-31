@@ -636,7 +636,7 @@ These make `python-indent-calculate-indentation' subtract the value of
                  (goto-char block-end)
                  (python-util-forward-comment)
                  (current-indentation))))
-          (if indentation
+          (if (and indentation (> indentation 0))
               (setq python-indent-offset indentation)
             (message "Can't guess python-indent-offset, using defaults: %s"
                      python-indent-offset)))))))
@@ -896,7 +896,13 @@ When the variable `last-command' is not equal to
 possible indentation levels and saves it in the variable
 `python-indent-levels'.  Afterwards it sets the variable
 `python-indent-current-level' correctly so offset is equal
-to (`nth' `python-indent-current-level' `python-indent-levels')"
+to (`nth' `python-indent-current-level' `python-indent-levels').
+
+When the current indent is correct and the position of the cursor
+is in between the beginning of line and indentation, position of
+the cursor is moved to the indentation but buffer remains
+unmodified.  Further execution of this command cycles indentation
+levels as described above."
   (if (or (and (eq this-command 'indent-for-tab-command)
                (eq last-command this-command))
           force-toggle)
@@ -904,10 +910,25 @@ to (`nth' `python-indent-current-level' `python-indent-levels')"
           (python-indent-toggle-levels)
         (python-indent-calculate-levels))
     (python-indent-calculate-levels))
-  (beginning-of-line)
-  (delete-horizontal-space)
-  (indent-to (nth python-indent-current-level python-indent-levels))
-  (python-info-closing-block-message))
+  (let ((column (nth python-indent-current-level python-indent-levels)))
+    (if (save-excursion
+          (and (search-backward-regexp "^[ \t]*\\=" nil t)
+               (progn
+                 (back-to-indentation)
+                 (= (current-column) column))))
+        ;; When in front of the code and the indentation is correct,
+        ;; just go to the indentation and do not modify the buffer and
+        ;; undo history.
+        (back-to-indentation)
+      (let ((indent-pos
+             (save-excursion
+               (beginning-of-line)
+               (delete-horizontal-space)
+               (indent-to column)
+               (point))))
+        (when (eq (point) (point-at-bol))
+          (goto-char indent-pos)))
+      (python-info-closing-block-message))))
 
 (defun python-indent-line-function ()
   "`indent-line-function' for Python mode.
