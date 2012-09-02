@@ -683,7 +683,8 @@ START is the buffer position where the sexp starts."
         ((setq start (save-excursion
                        (when (progn
                                (back-to-indentation)
-                               (python-util-forward-comment -1)
+                               (re-search-backward "^.*[^ \t\r\n].*$" nil t)
+                               (move-end-of-line 1)
                                (equal (char-before) ?:))
                          ;; Move to the first block start that's not in within
                          ;; a string, comment or paren and that's not a
@@ -699,7 +700,8 @@ START is the buffer position where the sexp starts."
         ;; After normal line
         ((setq start (save-excursion
                        (back-to-indentation)
-                       (python-util-forward-comment -1)
+                       (re-search-backward "^.*[^ \t\r\n].*$" nil t)
+                       (move-end-of-line 1)
                        (python-nav-beginning-of-statement)
                        (point-marker)))
          'after-line)
