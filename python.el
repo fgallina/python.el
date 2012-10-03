@@ -413,6 +413,17 @@ The type returned can be `comment', `string' or `paren'."
   'python-info-ppss-comment-or-string-p
   #'python-syntax-comment-or-string-p "24.3")
 
+(defun python-font-lock-syntactic-face-function (state)
+  (if (nth 3 state)
+      (let ((startpos (nth 8 state)))
+        (save-excursion
+          (goto-char startpos)
+          (if (and (looking-at-p "'''\\|\"\"\"")
+                   (looking-back "\\`\\|^\\s *\\(?:class\\|def\\)\\s +\\(?:\\sw\\|\\s_\\)+(.*):\n\\s *"))
+              font-lock-doc-face
+            font-lock-string-face)))
+    font-lock-comment-face))
+
 (defvar python-font-lock-keywords
   ;; Keywords
   `(,(rx symbol-start
@@ -3278,7 +3289,10 @@ if that value is non-nil."
        'python-nav-forward-sexp)
 
   (set (make-local-variable 'font-lock-defaults)
-       '(python-font-lock-keywords nil nil nil nil))
+       '(python-font-lock-keywords
+         nil nil nil nil
+         (font-lock-syntactic-face-function
+          . python-font-lock-syntactic-face-function)))
 
   (set (make-local-variable 'syntax-propertize-function)
        python-syntax-propertize-function)
