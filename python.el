@@ -419,7 +419,7 @@ The type returned can be `comment', `string' or `paren'."
         (save-excursion
           (goto-char startpos)
           (if (and (looking-at-p "'''\\|\"\"\"")
-                   (looking-back "\\`\\|^\\s *\\(?:class\\|def\\)\\s +\\(?:\\sw\\|\\s_\\)+(.*):\n\\s *"))
+                   (looking-back "\\(?:\\`\\|^\\s *\\(?:class\\|def\\)\\s +.*\\)\n*\\(?:\\s *#\\s *.*\n\\)*\\s *"))
               font-lock-doc-face
             font-lock-string-face)))
     font-lock-comment-face))
