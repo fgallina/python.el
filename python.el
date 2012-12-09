@@ -372,18 +372,18 @@ This variant of `rx' supports common python named REGEXPS."
   "Return non-nil if point is on TYPE using SYNTAX-PPSS.
 TYPE can be `comment', `string' or `paren'.  It returns the start
 character address of the specified TYPE."
-  (declare (compiler-macro
-            (lambda (form)
-              (pcase type
-                (`'comment
-                 `(let ((ppss (or ,syntax-ppss (syntax-ppss))))
-                    (and (nth 4 ppss) (nth 8 ppss))))
-                (`'string
-                 `(let ((ppss (or ,syntax-ppss (syntax-ppss))))
-                    (and (nth 3 ppss) (nth 8 ppss))))
-                (`'paren
-                 `(nth 1 (or ,syntax-ppss (syntax-ppss))))
-                (_ form)))))
+  ;; (declare (compiler-macro
+  ;;           (lambda (form)
+  ;;             (pcase type
+  ;;               (`'comment
+  ;;                `(let ((ppss (or ,syntax-ppss (syntax-ppss))))
+  ;;                   (and (nth 4 ppss) (nth 8 ppss))))
+  ;;               (`'string
+  ;;                `(let ((ppss (or ,syntax-ppss (syntax-ppss))))
+  ;;                   (and (nth 3 ppss) (nth 8 ppss))))
+  ;;               (`'paren
+  ;;                `(nth 1 (or ,syntax-ppss (syntax-ppss))))
+  ;;               (_ form)))))
   (let ((ppss (or syntax-ppss (syntax-ppss))))
     (pcase type
       (`comment (and (nth 4 ppss) (nth 8 ppss)))
@@ -502,7 +502,7 @@ The type returned can be `comment', `string' or `paren'."
             (while (and (python-syntax-context 'paren)
                         (re-search-forward re limit t)))
             (if (not (or (python-syntax-context 'paren)
-                         (equal (char-after (point-marker)) ?=)))
+                         (char-equal (char-after) ?\=)))
                 t
               (set-match-data nil)))))
      (1 font-lock-variable-name-face nil nil))
@@ -664,7 +664,7 @@ These make `python-indent-calculate-indentation' subtract the value of
                        (python-util-forward-comment -1)
                        (when (equal (char-before) ?:)
                          t)))))
-            (setq block-end (point-marker))))
+            (setq block-end (point))))
         (let ((indentation
                (when block-end
                  (goto-char block-end)
@@ -727,14 +727,14 @@ START is the buffer position where the sexp starts."
                                       (python-syntax-context-type)
                                       (python-info-continuation-line-p))))
                          (when (looking-at-p (python-rx block-start))
-                           (point-marker)))))
+                           (point)))))
          'after-beginning-of-block)
         ;; After normal line
         ((setq start (save-excursion
                        (back-to-indentation)
                        (skip-chars-backward (rx (or whitespace ?\n)))
                        (python-nav-beginning-of-statement)
-                       (point-marker)))
+                       (point)))
          'after-line)
         ;; Do not indent
         (t 'no-indent))
@@ -938,7 +938,7 @@ equal to (`nth' `python-indent-current-level'
         (not (equal python-indent-levels '(0)))
         (or (python-indent-toggle-levels) t))
    (python-indent-calculate-levels))
-  (let* ((starting-pos (point-marker))
+  (let* ((starting-pos (point))
          (indent-ending-position
           (+ (line-beginning-position) (current-indentation)))
          (follow-indentation-p
@@ -963,9 +963,9 @@ See `python-indent-line' for details."
   "De-indent current line."
   (interactive "*")
   (when (and (not (python-syntax-comment-or-string-p))
-             (<= (point-marker) (save-excursion
-                                  (back-to-indentation)
-                                  (point-marker)))
+             (<= (point) (save-excursion
+                           (back-to-indentation)
+                           (point)))
              (> (current-column) 0))
     (python-indent-line t)
     t))
@@ -1061,7 +1061,7 @@ With numeric ARG, just insert that many colons.  With
   (self-insert-command (if (not (integerp arg)) 1 arg))
   (when (and (not arg)
              (eolp)
-             (not (equal ?: (char-after (- (point-marker) 2))))
+             (not (char-equal ?: (char-after (- (point) 2))))
              (not (python-syntax-comment-or-string-p)))
     (let ((indentation (current-indentation))
           (calculated-indentation (python-indent-calculate-indentation)))
@@ -1192,7 +1192,7 @@ Returns nil if point is not in a def or class."
                      (python-syntax-context 'string)
                      (python-syntax-context 'paren))
                 (forward-line -1))))
-  (point-marker))
+  (point))
 
 (defun python-nav-end-of-statement (&optional noend)
   "Move to end of current statement.
@@ -1224,7 +1224,7 @@ of the statement."
                       ((setq bs-pos (python-info-line-ends-backslash-p))
                        (goto-char bs-pos)
                        (forward-line 1))))))
-  (point-marker))
+  (point))
 
 (defun python-nav-backward-statement (&optional arg)
   "Move backward to previous statement.
@@ -1259,7 +1259,7 @@ backward to previous statement."
     (if (progn
           (python-nav-beginning-of-statement)
           (looking-at-p (python-rx block-start)))
-        (point-marker)
+        (point)
       ;; Go to first line beginning a statement
       (while (and (not (bobp))
                   (or (and (python-nav-beginning-of-statement) nil)
@@ -1273,7 +1273,7 @@ backward to previous statement."
                  (> (current-indentation) block-matching-indent)))
         (if (and (looking-at-p (python-rx block-start))
                  (= (current-indentation) block-matching-indent))
-            (point-marker)
+            (point)
           (and (goto-char starting-pos) nil))))))
 
 (defun python-nav-end-of-block ()
@@ -1289,7 +1289,7 @@ backward to previous statement."
                       (python-info-current-line-comment-p)
                       (python-info-current-line-empty-p))))
       (python-util-forward-comment -1)
-      (point-marker))))
+      (point))))
 
 (defun python-nav-backward-block (&optional arg)
   "Move backward to previous block of code.
@@ -1322,7 +1322,7 @@ backward to previous block."
     (python-nav-beginning-of-statement)
     (if (not (looking-at-p (python-rx block-start)))
         (and (goto-char starting-pos) nil)
-      (and (not (= (point) starting-pos)) (point-marker)))))
+      (and (not (= (point) starting-pos)) (point)))))
 
 (defun python-nav-lisp-forward-sexp-safe (&optional arg)
   "Safe version of standard `forward-sexp'.
@@ -2059,7 +2059,7 @@ by \"if __name__== '__main__':\""
   (interactive "P")
   (save-restriction
     (widen)
-    (let ((str (buffer-substring (point-min) (point-max))))
+    (let ((str (buffer-substring-no-properties (point-min) (point-max))))
       (and
        (not arg)
        (setq str (replace-regexp-in-string
@@ -2082,11 +2082,11 @@ When argument ARG is non-nil do not include decorators."
          (while (and (forward-line -1)
                      (looking-at-p (python-rx decorator))))
          (forward-line 1))
-       (point-marker))
+       (point))
      (progn
        (or (python-nav-end-of-defun)
            (end-of-line 1))
-       (point-marker)))))
+       (point)))))
 
 (defun python-shell-send-file (file-name &optional process temp-file-name)
   "Send FILE-NAME to inferior Python PROCESS.
@@ -2276,8 +2276,9 @@ If content before pointer is all whitespace indent.  If not try
 to complete."
   (interactive)
   (if (string-match-p "^[[:space:]]*$"
-                      (buffer-substring (comint-line-beginning-position)
-                                        (point)))
+                      (buffer-substring-no-properties
+                       (comint-line-beginning-position)
+                       (point)))
       (indent-for-tab-command)
     (completion-at-point)))
 
@@ -2354,7 +2355,7 @@ Argument OUTPUT is a string with the output from the comint process."
               (setq tracked-buffer-line-pos (progn
                                               (goto-char (point-min))
                                               (forward-line (1- line-number))
-                                              (point-marker)))
+                                              (point)))
               (when tracked-buffer-window
                 (set-window-point
                  tracked-buffer-window tracked-buffer-line-pos))
@@ -2606,8 +2607,7 @@ JUSTIFY should be used (if applicable) as in `fill-paragraph'."
   (save-restriction
     (narrow-to-region (progn
                         (while (python-syntax-context 'paren)
-                          (goto-char (1- (point-marker))))
-                        (point-marker)
+                          (forward-char -1))
                         (line-beginning-position))
                       (progn
                         (when (not (python-syntax-context 'paren))
@@ -2615,8 +2615,8 @@ JUSTIFY should be used (if applicable) as in `fill-paragraph'."
                           (when (not (python-syntax-context 'paren))
                             (skip-syntax-backward "^)")))
                         (while (python-syntax-context 'paren)
-                          (goto-char (1+ (point-marker))))
-                        (point-marker)))
+                          (forward-char))
+                        (point)))
     (let ((paragraph-start "\f\\|[ \t]*$")
           (paragraph-separate ",")
           (fill-paragraph-function))
@@ -3051,9 +3051,7 @@ parent defun name."
 
 (defun python-info-end-of-statement-p ()
   "Return non-nil if point is at end of statement."
-  (= (point) (save-excursion
-               (python-nav-end-of-statement)
-               (point))))
+  (= (point) (python-nav-end-of-statement)))
 
 (defun python-info-beginning-of-block-p ()
   "Return non-nil if point is at beginning of block."
@@ -3083,16 +3081,16 @@ parent defun name."
          ((not (equal indentation (current-indentation))) nil)
          ((string= closing-word "elif")
           (when (member (current-word) '("if" "elif"))
-            (point-marker)))
+            (point)))
          ((string= closing-word "else")
           (when (member (current-word) '("if" "elif" "except" "for" "while"))
-            (point-marker)))
+            (point)))
          ((string= closing-word "except")
           (when (member (current-word) '("try"))
-            (point-marker)))
+            (point)))
          ((string= closing-word "finally")
           (when (member (current-word) '("except" "else"))
-            (point-marker))))))))
+            (point))))))))
 
 (defun python-info-closing-block-message (&optional closing-block-point)
   "Message the contents of the block the current line closes.
@@ -3121,8 +3119,7 @@ With optional argument LINE-NUMBER, check that line instead."
                   (python-syntax-context 'paren)
                   (not (equal (char-before (point)) ?\\)))
         (forward-line 1))
-      (when (equal (char-before) ?\\)
-        (point-marker)))))
+      (char-equal (char-before) ?\\))))
 
 (defun python-info-beginning-of-backslash (&optional line-number)
   "Return the point where the backslashed line start.
@@ -3138,7 +3135,7 @@ Optional argument LINE-NUMBER forces the line number to check against."
                  (python-syntax-context 'paren))
           (forward-line -1))
         (back-to-indentation)
-        (point-marker)))))
+        (point)))))
 
 (defun python-info-continuation-line-p ()
   "Check if current line is continuation of another.
@@ -3157,7 +3154,7 @@ where the continued line ends."
                ;; Lines inside a paren are always a continuation line
                ;; (except the first one).
                (python-util-forward-comment -1)
-               (point-marker))
+               (point))
               ((member context-type '(string comment))
                ;; move forward an roll again
                (goto-char context-start)
@@ -3172,7 +3169,7 @@ where the continued line ends."
                (python-util-forward-comment -1)
                (when (and (equal (1- line-start) (line-number-at-pos))
                           (python-info-line-ends-backslash-p))
-                 (point-marker))))))))
+                 (point))))))))
 
 (defun python-info-block-continuation-line-p ()
   "Return non-nil if current line is a continuation of a block."
@@ -3181,7 +3178,7 @@ where the continued line ends."
       (forward-line -1)
       (back-to-indentation)
       (when (looking-at-p (python-rx block-start))
-        (point-marker)))))
+        (point)))))
 
 (defun python-info-assignment-continuation-line-p ()
   "Check if current line is a continuation of an assignment.
@@ -3199,7 +3196,7 @@ operator."
                                          (line-end-position) t)
                       (not (python-syntax-context-type))))
         (skip-syntax-forward "\s")
-        (point-marker)))))
+        (point)))))
 
 (defun python-info-looking-at-beginning-of-defun (&optional syntax-ppss)
   "Check if point is at `beginning-of-defun' using SYNTAX-PPSS."
