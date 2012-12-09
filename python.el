@@ -220,10 +220,10 @@
 
 (autoload 'comint-mode "comint")
 
-;;;###autoload
-(add-to-list 'auto-mode-alist (cons (purecopy "\\.py\\'")  'python-mode))
-;;;###autoload
-(add-to-list 'interpreter-mode-alist (cons (purecopy "python") 'python-mode))
+;; ;;;###autoload
+;; (add-to-list 'auto-mode-alist (cons (purecopy "\\.py\\'")  'python-mode))
+;; ;;;###autoload
+;; (add-to-list 'interpreter-mode-alist (cons (purecopy "python") 'python-mode))
 
 (defgroup python nil
   "Python Language's flying circus support for Emacs."
@@ -415,7 +415,7 @@ The type returned can be `comment', `string' or `paren'."
 
 (defvar python-font-lock-keywords
   ;; Keywords
-  `(,(rx symbol-start
+  `(,(rx word-start
          (or
           "and" "del" "from" "not" "while" "as" "elif" "global" "or" "with"
           "assert" "else" "if" "pass" "yield" "break" "except" "import" "class"
@@ -431,12 +431,22 @@ The type returned can be `comment', `string' or `paren'."
           "nonlocal"
           ;; Extra:
           "self")
-         symbol-end)
+         word-end)
     ;; functions
-    (,(rx symbol-start "def" (1+ space) (group (1+ (or word ?_))))
+    (,(rx symbol-start
+          "def"
+          (1+ space)
+          (group symbol-start
+                 (1+ (syntax symbol))
+                 symbol-end))
      (1 font-lock-function-name-face))
     ;; classes
-    (,(rx symbol-start "class" (1+ space) (group (1+ (or word ?_))))
+    (,(rx symbol-start
+          "class"
+          (1+ space)
+          (group symbol-start
+                 (1+ (syntax symbol))
+                 symbol-end))
      (1 font-lock-type-face))
     ;; Constants
     (,(rx symbol-start
@@ -494,33 +504,34 @@ The type returned can be `comment', `string' or `paren'."
           symbol-end) . font-lock-builtin-face)
     ;; assignments
     ;; support for a = b = c = 5
-    (,(lambda (limit)
-        (let ((re (python-rx (group (+ (any word ?. ?_)))
-                             (? ?\[ (+ (not (any  ?\]))) ?\]) (* space)
-                             assignment-operator)))
-          (when (re-search-forward re limit t)
-            (while (and (python-syntax-context 'paren)
-                        (re-search-forward re limit t)))
-            (if (not (or (python-syntax-context 'paren)
-                         (char-equal (char-after) ?\=)))
-                t
-              (set-match-data nil)))))
-     (1 font-lock-variable-name-face nil nil))
+    ;; (,(lambda (limit)
+    ;;     (let ((re (python-rx (group (+ (any word ?. ?_)))
+    ;;                          (? ?\[ (+ (not (any  ?\]))) ?\]) (* space)
+    ;;                          assignment-operator)))
+    ;;       (when (re-search-forward re limit t)
+    ;;         (while (and (python-syntax-context 'paren)
+    ;;                     (re-search-forward re limit t)))
+    ;;         (if (not (or (python-syntax-context 'paren)
+    ;;                      (char-equal (char-after) ?\=)))
+    ;;           t
+    ;;           (set-match-data nil)))))
+    ;;  (1 font-lock-variable-name-face nil nil))
     ;; support for a, b, c = (1, 2, 3)
-    (,(lambda (limit)
-        (let ((re (python-rx (group (+ (any word ?. ?_))) (* space)
-                             (* ?, (* space) (+ (any word ?. ?_)) (* space))
-                             ?, (* space) (+ (any word ?. ?_)) (* space)
-                             assignment-operator)))
-          (when (and (re-search-forward re limit t)
-                     (goto-char (nth 3 (match-data))))
-            (while (and (python-syntax-context 'paren)
-                        (re-search-forward re limit t))
-              (goto-char (nth 3 (match-data))))
-            (if (not (python-syntax-context 'paren))
-                t
-              (set-match-data nil)))))
-     (1 font-lock-variable-name-face nil nil))))
+    ;; (,(lambda (limit)
+    ;;     (let ((re (python-rx (group (+ (any word ?. ?_))) (* space)
+    ;;                          (* ?, (* space) (+ (any word ?. ?_)) (* space))
+    ;;                          ?, (* space) (+ (any word ?. ?_)) (* space)
+    ;;                          assignment-operator)))
+    ;;       (when (and (re-search-forward re limit t)
+    ;;                  (goto-char (nth 3 (match-data))))
+    ;;         (while (and (python-syntax-context 'paren)
+    ;;                     (re-search-forward re limit t))
+    ;;           (goto-char (nth 3 (match-data))))
+    ;;         (if (not (python-syntax-context 'paren))
+    ;;           t
+    ;;           (set-match-data nil)))))
+    ;;  (1 font-lock-variable-name-face nil nil))
+    ))
 
 (defconst python-syntax-propertize-function
   (syntax-propertize-rules
@@ -1304,25 +1315,26 @@ With ARG, repeat.  With negative argument, move ARG times
 backward to previous block."
   (interactive "^p")
   (or arg (setq arg 1))
-  (let ((block-start-regexp
-         (python-rx line-start (* whitespace) block-start))
-        (starting-pos (point)))
-    (while (> arg 0)
-      (python-nav-end-of-statement)
-      (while (and
-              (re-search-forward block-start-regexp nil t)
-              (python-syntax-context-type)))
-      (setq arg (1- arg)))
-    (while (< arg 0)
-      (python-nav-beginning-of-statement)
-      (while (and
-              (re-search-backward block-start-regexp nil t)
-              (python-syntax-context-type)))
-      (setq arg (1+ arg)))
-    (python-nav-beginning-of-statement)
-    (if (not (looking-at-p (python-rx block-start)))
-        (and (goto-char starting-pos) nil)
-      (and (not (= (point) starting-pos)) (point)))))
+  (save-match-data
+   (let ((block-start-regexp
+           (python-rx line-start (* whitespace) block-start))
+         (starting-pos (point)))
+     (while (> arg 0)
+       (python-nav-end-of-statement)
+       (while (and
+               (re-search-forward block-start-regexp nil t)
+               (python-syntax-context-type)))
+       (setq arg (1- arg)))
+     (while (< arg 0)
+       (python-nav-beginning-of-statement)
+       (while (and
+               (re-search-backward block-start-regexp nil t)
+               (python-syntax-context-type)))
+       (setq arg (1+ arg)))
+     (python-nav-beginning-of-statement)
+     (if (not (looking-at-p (python-rx block-start)))
+       (and (goto-char starting-pos) nil)
+       (and (not (= (point) starting-pos)) (point))))))
 
 (defun python-nav-lisp-forward-sexp-safe (&optional arg)
   "Safe version of standard `forward-sexp'.
@@ -1652,7 +1664,7 @@ uniqueness for different types of configurations."
           python-shell-internal-buffer-name
           (md5
            (concat
-            (python-shell-parse-command)
+            (python-shell-assemble-command)
             python-shell-prompt-regexp
             python-shell-prompt-block-regexp
             python-shell-prompt-output-regexp
@@ -1663,7 +1675,7 @@ uniqueness for different types of configurations."
             (or python-shell-virtualenv-path "")
             (mapconcat #'identity python-shell-exec-path "")))))
 
-(defun python-shell-parse-command ()
+(defun python-shell-assemble-command ()
   "Calculate the string used to execute the inferior Python process."
   (let ((process-environment (python-shell-calculate-process-environment))
         (exec-path (python-shell-calculate-exec-path)))
@@ -1706,10 +1718,24 @@ uniqueness for different types of configurations."
                     (directory-file-name python-shell-virtualenv-path))
             path))))
 
+(defun python-preoutput-disable-fontification (output)
+  "Sees to disable any potential fontification that may be done by font-lock.
+This function is runned before python outputs get's inserted into the buffer."
+  (set-text-properties 0
+                       (length output)
+                       ;; seems to work with unquoted face names
+                       '(font-lock-face         default
+                         face                   default
+                         fontified              t
+                         disable-pretty-symbols t)
+                       output)
+  output)
+
 (defun python-comint-output-filter-function (output)
   "Hook run after content is put into comint buffer.
 OUTPUT is a string with the contents of the buffer."
   (ansi-color-filter-apply output))
+
 
 (defvar python-shell--parent-buffer nil)
 
@@ -1761,6 +1787,11 @@ variable.
             'python-comint-output-filter-function)
   (add-hook 'comint-output-filter-functions
             'python-pdbtrack-comint-output-filter-function)
+
+  (make-local-variable 'comint-preoutput-filter-functions)
+  (add-hook 'comint-preoutput-filter-functions
+            #'python-preoutput-disable-fontification)
+
   (set (make-local-variable 'compilation-error-regexp-alist)
        python-shell-compilation-regexp-alist)
   (define-key inferior-python-mode-map [remap complete-symbol]
@@ -1769,8 +1800,8 @@ variable.
             'python-shell-completion-complete-at-point nil 'local)
   (add-to-list (make-local-variable 'comint-dynamic-complete-functions)
                'python-shell-completion-complete-at-point)
-  (define-key inferior-python-mode-map "\t"
-    'python-shell-completion-complete-or-indent)
+  ;; (define-key inferior-python-mode-map "\t"
+  ;;   'python-shell-completion-complete-or-indent)
   (make-local-variable 'python-pdbtrack-buffers-to-kill)
   (make-local-variable 'python-pdbtrack-tracked-buffer)
   (make-local-variable 'python-shell-internal-last-output)
@@ -1812,7 +1843,7 @@ the user is not queried for confirmation when the process is
 killed."
   (save-excursion
     (let* ((proc-buffer-name
-            (format (if (not internal) "*%s*" " *%s*") proc-name))
+            (format (if internal " *%s*" "*%s*") proc-name))
            (process-environment (python-shell-calculate-process-environment))
            (exec-path (python-shell-calculate-exec-path)))
       (when (not (comint-check-proc proc-buffer-name))
@@ -1846,10 +1877,10 @@ process buffer for a list of commands.)"
   (interactive
    (if current-prefix-arg
        (list
-        (read-string "Run Python: " (python-shell-parse-command))
+        (read-string "Run Python: " (python-shell-assemble-command))
         (y-or-n-p "Make dedicated process? ")
         (= (prefix-numeric-value current-prefix-arg) 4))
-     (list (python-shell-parse-command) nil t)))
+     (list (python-shell-assemble-command) nil t)))
   (python-shell-make-comint
    cmd (python-shell-get-process-name dedicated) show)
   dedicated)
@@ -1873,7 +1904,7 @@ startup."
         (inferior-python-mode-hook nil))
     (get-buffer-process
      (python-shell-make-comint
-      (python-shell-parse-command)
+      (python-shell-assemble-command)
       (python-shell-internal-get-process-name) nil t))))
 
 (defun python-shell-get-process ()
@@ -2126,7 +2157,7 @@ This function takes the list of setup code to send from the
   (let ((process (get-buffer-process (current-buffer))))
     (dolist (code python-shell-setup-codes)
       (when code
-        (message "Sent %s" code)
+        ;; (message "Sent %s" code)
         (python-shell-send-string
          (symbol-value code) process)))))
 
@@ -2692,75 +2723,75 @@ The skeleton will be bound to python-skeleton-NAME."
          (signal 'quit t))
        ,@skel)))
 
-(python-define-auxiliary-skeleton else nil)
-
-(python-define-auxiliary-skeleton except nil)
-
-(python-define-auxiliary-skeleton finally nil)
-
-(python-skeleton-define if nil
-  "Condition: "
-  "if " str ":" \n
-  _ \n
-  ("other condition, %s: "
-   <
-   "elif " str ":" \n
-   > _ \n nil)
-  '(python-skeleton--else) | ^)
-
-(python-skeleton-define while nil
-  "Condition: "
-  "while " str ":" \n
-  > _ \n
-  '(python-skeleton--else) | ^)
-
-(python-skeleton-define for nil
-  "Iteration spec: "
-  "for " str ":" \n
-  > _ \n
-  '(python-skeleton--else) | ^)
-
-(python-skeleton-define try nil
-  nil
-  "try:" \n
-  > _ \n
-  ("Exception, %s: "
-   <
-   "except " str ":" \n
-   > _ \n nil)
-  resume:
-  '(python-skeleton--except)
-  '(python-skeleton--else)
-  '(python-skeleton--finally) | ^)
-
-(python-skeleton-define def nil
-  "Function name: "
-  "def " str "(" ("Parameter, %s: "
-                  (unless (equal ?\( (char-before)) ", ")
-                  str) "):" \n
-                  "\"\"\"" - "\"\"\"" \n
-                  > _ \n)
-
-(python-skeleton-define class nil
-  "Class name: "
-  "class " str "(" ("Inheritance, %s: "
-                    (unless (equal ?\( (char-before)) ", ")
-                    str)
-  & ")" | -2
-  ":" \n
-  "\"\"\"" - "\"\"\"" \n
-  > _ \n)
-
-(defun python-skeleton-add-menu-items ()
-  "Add menu items to Python->Skeletons menu."
-  (let ((skeletons (sort python-skeleton-available 'string<))
-        (items))
-    (dolist (skeleton skeletons)
-      (easy-menu-add-item
-       nil '("Python" "Skeletons")
-       `[,(format
-           "Insert %s" (nth 2 (split-string (symbol-name skeleton) "-")))
-         ,skeleton t]))))
+;; (python-define-auxiliary-skeleton else nil)
+;;
+;; (python-define-auxiliary-skeleton except nil)
+;;
+;; (python-define-auxiliary-skeleton finally nil)
+;;
+;; (python-skeleton-define if nil
+;;   "Condition: "
+;;   "if " str ":" \n
+;;   _ \n
+;;   ("other condition, %s: "
+;;    <
+;;    "elif " str ":" \n
+;;    > _ \n nil)
+;;   '(python-skeleton--else) | ^)
+;;
+;; (python-skeleton-define while nil
+;;   "Condition: "
+;;   "while " str ":" \n
+;;   > _ \n
+;;   '(python-skeleton--else) | ^)
+;;
+;; (python-skeleton-define for nil
+;;   "Iteration spec: "
+;;   "for " str ":" \n
+;;   > _ \n
+;;   '(python-skeleton--else) | ^)
+;;
+;; (python-skeleton-define try nil
+;;   nil
+;;   "try:" \n
+;;   > _ \n
+;;   ("Exception, %s: "
+;;    <
+;;    "except " str ":" \n
+;;    > _ \n nil)
+;;   resume:
+;;   '(python-skeleton--except)
+;;   '(python-skeleton--else)
+;;   '(python-skeleton--finally) | ^)
+;;
+;; (python-skeleton-define def nil
+;;   "Function name: "
+;;   "def " str "(" ("Parameter, %s: "
+;;                   (unless (equal ?\( (char-before)) ", ")
+;;                   str) "):" \n
+;;                   "\"\"\"" - "\"\"\"" \n
+;;                   > _ \n)
+;;
+;; (python-skeleton-define class nil
+;;   "Class name: "
+;;   "class " str "(" ("Inheritance, %s: "
+;;                     (unless (equal ?\( (char-before)) ", ")
+;;                     str)
+;;   & ")" | -2
+;;   ":" \n
+;;   "\"\"\"" - "\"\"\"" \n
+;;   > _ \n)
+;;
+;; (defun python-skeleton-add-menu-items ()
+;;   "Add menu items to Python->Skeletons menu."
+;;   (let ((skeletons (sort python-skeleton-available 'string<))
+;;         (items))
+;;     (dolist (skeleton skeletons)
+;;       (easy-menu-add-item
+;;        nil '("Python" "Skeletons")
+;;        `[,(format
+;;            "Insert %s" (nth 2 (split-string (symbol-name skeleton) "-")))
+;;          ,skeleton t]))))
 
 ;;; FFAP
 
@@ -3108,7 +3139,7 @@ recalculating it calling `python-info-closing-block'."
 
 (defun python-info-line-ends-backslash-p (&optional line-number)
   "Return non-nil if current line ends with backslash.
-With optional argument LINE-NUMBER, check that line instead."
+With optional argument POS, check that line at that position instead."
   (save-excursion
     (save-restriction
       (widen)
@@ -3121,9 +3152,9 @@ With optional argument LINE-NUMBER, check that line instead."
         (forward-line 1))
       (char-equal (char-before) ?\\))))
 
-(defun python-info-beginning-of-backslash (&optional line-number)
+(defun python-info-beginning-of-backslash (&optional pos)
   "Return the point where the backslashed line start.
-Optional argument LINE-NUMBER forces the line number to check against."
+Optional argument POS specifies to check line at that position."
   (save-excursion
     (save-restriction
       (widen)
@@ -3334,7 +3365,7 @@ if that value is non-nil."
            "`outline-level' function for Python mode."
            (1+ (/ (current-indentation) python-indent-offset))))
 
-  (python-skeleton-add-menu-items)
+  ;; (python-skeleton-add-menu-items)
 
   (make-local-variable 'python-shell-internal-buffer)
 
