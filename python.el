@@ -726,7 +726,7 @@ START is the buffer position where the sexp starts."
                                      (or
                                       (python-syntax-context-type)
                                       (python-info-continuation-line-p))))
-                         (when (looking-at (python-rx block-start))
+                         (when (looking-at-p (python-rx block-start))
                            (point-marker)))))
          'after-beginning-of-block)
         ;; After normal line
@@ -765,7 +765,7 @@ START is the buffer position where the sexp starts."
               (current-indentation))
             (if (progn
                   (back-to-indentation)
-                  (looking-at (regexp-opt python-indent-dedenters)))
+                  (looking-at-p (regexp-opt python-indent-dedenters)))
                 python-indent-offset
               0)))
           ;; When inside of a string, do nothing. just use the current
@@ -782,7 +782,7 @@ START is the buffer position where the sexp starts."
             ;; line must contain a dot too.
             ((save-excursion
                (back-to-indentation)
-               (when (looking-at "\\.")
+               (when (looking-at-p "\\.")
                  ;; If after moving one line back point is inside a paren it
                  ;; needs to move back until it's not anymore
                  (while (prog2
@@ -793,7 +793,7 @@ START is the buffer position where the sexp starts."
                  (while (and (re-search-backward
                               "\\." (line-beginning-position) t)
                              (python-syntax-context-type)))
-                 (if (and (looking-at "\\.")
+                 (if (and (looking-at-p "\\.")
                           (not (python-syntax-context-type)))
                      ;; The indentation is the same column of the
                      ;; first matching dot that's not inside a
@@ -847,7 +847,7 @@ START is the buffer position where the sexp starts."
             ;; current indentation of the context-start line.
             ((save-excursion
                (skip-syntax-forward "\s" (line-end-position))
-               (when (and (looking-at (regexp-opt '(")" "]" "}")))
+               (when (and (member (char-after) '(?\) ?\] ?\}))
                           (progn
                             (forward-char 1)
                             (not (python-syntax-context 'paren))))
@@ -869,7 +869,7 @@ START is the buffer position where the sexp starts."
                                       (line-beginning-position)
                                       (line-end-position))
                                      (python-util-forward-comment))
-                                   (looking-at "$")))
+                                   (looking-at-p "$")))
                            (+ (current-indentation) python-indent-offset)
                          (current-column)))))
                ;; Adjustments
@@ -878,7 +878,7 @@ START is the buffer position where the sexp starts."
                 ;; level.
                 ((progn
                    (back-to-indentation)
-                   (looking-at (regexp-opt '(")" "]" "}"))))
+                   (member (char-after) '(?\) ?\] ?\})))
                  (- indent python-indent-offset))
                 ;; If the line of the opening paren that wraps the current
                 ;; line starts a block add another level of indentation to
@@ -888,7 +888,7 @@ START is the buffer position where the sexp starts."
                               (progn
                                 (goto-char context-start)
                                 (back-to-indentation)
-                                (looking-at (python-rx block-start))))
+                                (looking-at-p (python-rx block-start))))
                      (+ indent python-indent-offset))))
                 (t indent)))))))))))
 
@@ -1031,7 +1031,7 @@ any lines in the region are indented less than COUNT columns."
         (goto-char start)
         (while (< (point) end)
           (if (and (< (current-indentation) count)
-                   (not (looking-at "[ \t]*$")))
+                   (not (looking-at-p "[ \t]*$")))
               (error "Can't shift all lines enough"))
           (forward-line))
         (indent-rigidly start end (- count))))))
@@ -1258,7 +1258,7 @@ backward to previous statement."
                        line-start (* whitespace) block-start)))
     (if (progn
           (python-nav-beginning-of-statement)
-          (looking-at (python-rx block-start)))
+          (looking-at-p (python-rx block-start)))
         (point-marker)
       ;; Go to first line beginning a statement
       (while (and (not (bobp))
@@ -1271,7 +1271,7 @@ backward to previous statement."
         (while
             (and (python-nav-backward-block)
                  (> (current-indentation) block-matching-indent)))
-        (if (and (looking-at (python-rx block-start))
+        (if (and (looking-at-p (python-rx block-start))
                  (= (current-indentation) block-matching-indent))
             (point-marker)
           (and (goto-char starting-pos) nil))))))
@@ -1320,7 +1320,7 @@ backward to previous block."
               (python-syntax-context-type)))
       (setq arg (1+ arg)))
     (python-nav-beginning-of-statement)
-    (if (not (looking-at (python-rx block-start)))
+    (if (not (looking-at-p (python-rx block-start)))
         (and (goto-char starting-pos) nil)
       (and (not (= (point) starting-pos)) (point-marker)))))
 
@@ -1358,7 +1358,7 @@ backwards."
         (let ((forward-sexp-function))
           (forward-sexp dir)))
        ((or (eq context-type 'paren)
-            (and forward-p (looking-at (python-rx open-paren)))
+            (and forward-p (looking-at-p (python-rx open-paren)))
             (and (not forward-p)
                  (eq (syntax-class (syntax-after (1- (point))))
                      (car (string-to-syntax ")")))))
@@ -1959,8 +1959,8 @@ When MSG is non-nil messages the first line of STRING."
             (delete-trailing-whitespace))
           (python-shell-send-file file-name process temp-file-name))
       (comint-send-string process string)
-      (when (or (not (string-match "\n$" string))
-                (string-match "\n[ \t].*\n?$" string))
+      (when (or (not (string-match-p "\n$" string))
+                (string-match-p "\n[ \t].*\n?$" string))
         (comint-send-string process "\n")))))
 
 (defvar python-shell-output-filter-in-progress nil)
@@ -2080,7 +2080,7 @@ When argument ARG is non-nil do not include decorators."
                    (> (current-indentation) 0)))
        (when (not arg)
          (while (and (forward-line -1)
-                     (looking-at (python-rx decorator))))
+                     (looking-at-p (python-rx decorator))))
          (forward-line 1))
        (point-marker))
      (progn
@@ -2204,16 +2204,16 @@ INPUT."
           ;; statement or just the standard prompt and use the
           ;; correct python-shell-completion-*-code string
           (cond ((and (> (length python-shell-completion-pdb-string-code) 0)
-                      (string-match
+                      (string-match-p
                        (concat "^" python-shell-prompt-pdb-regexp) prompt))
                  'pdb)
                 ((and (>
                        (length python-shell-completion-module-string-code) 0)
-                      (string-match
+                      (string-match-p
                        (concat "^" python-shell-prompt-regexp) prompt)
-                      (string-match "^[ \t]*\\(from\\|import\\)[ \t]" line))
+                      (string-match-p "^[ \t]*\\(from\\|import\\)[ \t]" line))
                  'import)
-                ((string-match
+                ((string-match-p
                   (concat "^" python-shell-prompt-regexp) prompt)
                  'default)
                 (t nil)))
@@ -2275,9 +2275,9 @@ using that one instead of current buffer's process."
 If content before pointer is all whitespace indent.  If not try
 to complete."
   (interactive)
-  (if (string-match "^[[:space:]]*$"
-                    (buffer-substring (comint-line-beginning-position)
-                                      (point-marker)))
+  (if (string-match-p "^[[:space:]]*$"
+                      (buffer-substring (comint-line-beginning-position)
+                                        (point)))
       (indent-for-tab-command)
     (completion-at-point)))
 
@@ -2513,10 +2513,10 @@ Optional argument JUSTIFY defines if the paragraph should be justified."
       (funcall python-fill-decorator-function justify))
      ;; Parens
      ((or (python-syntax-context 'paren)
-          (looking-at (python-rx open-paren))
+          (looking-at-p (python-rx open-paren))
           (save-excursion
             (skip-syntax-forward "^(" (line-end-position))
-            (looking-at (python-rx open-paren))))
+            (looking-at-p (python-rx open-paren))))
       (funcall python-fill-paren-function justify))
      (t t))))
 
@@ -3032,7 +3032,7 @@ parent defun name."
   "Return non-nil if current statement opens a block."
   (save-excursion
     (python-nav-beginning-of-statement)
-    (looking-at (python-rx block-start))))
+    (looking-at-p (python-rx block-start))))
 
 (defun python-info-statement-ends-block-p ()
   "Return non-nil if point is at end of block."
@@ -3180,7 +3180,7 @@ where the continued line ends."
     (when (python-info-continuation-line-p)
       (forward-line -1)
       (back-to-indentation)
-      (when (looking-at (python-rx block-start))
+      (when (looking-at-p (python-rx block-start))
         (point-marker)))))
 
 (defun python-info-assignment-continuation-line-p ()
@@ -3192,7 +3192,7 @@ operator."
     (when (python-info-continuation-line-p)
       (forward-line -1)
       (back-to-indentation)
-      (when (and (not (looking-at (python-rx block-start)))
+      (when (and (not (looking-at-p (python-rx block-start)))
                  (and (re-search-forward (python-rx not-simple-operator
                                                     assignment-operator
                                                     not-simple-operator)
@@ -3206,7 +3206,7 @@ operator."
   (and (not (python-syntax-context-type (or syntax-ppss (syntax-ppss))))
        (save-excursion
          (beginning-of-line 1)
-         (looking-at python-nav-beginning-of-defun-regexp))))
+         (looking-at-p python-nav-beginning-of-defun-regexp))))
 
 (defun python-info-current-line-comment-p ()
   "Check if current line is a comment line."
@@ -3240,8 +3240,8 @@ to \"^python-\"."
   (mapc
    (lambda (pair)
      (and (symbolp (car pair))
-          (string-match (or regexp "^python-")
-                        (symbol-name (car pair)))
+          (string-match-p (or regexp "^python-")
+                          (symbol-name (car pair)))
           (set (make-local-variable (car pair))
                (cdr pair))))
    (buffer-local-variables from-buffer)))
