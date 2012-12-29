@@ -1,0 +1,7 @@
+(source "melpa" "http://melpa.milkbox.net/packages/")
+
+(package "python" "0.24.2" "Python's flying circus support for Emacs")
+
+(development
+ (depends-on "ecukes")
+ (depends-on "espuds"))
