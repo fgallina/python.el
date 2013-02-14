@@ -413,15 +413,21 @@ The type returned can be `comment', `string' or `paren'."
   'python-info-ppss-comment-or-string-p
   #'python-syntax-comment-or-string-p "24.3")
 
+(defun python-docstring-at-p (pos)
+  "Check to see if there is a docstring at POS."
+  (save-excursion
+    (goto-char pos)
+    (if (looking-at-p "'''\\|\"\"\"")
+        (progn
+          (python-nav-backward-statement)
+          (looking-at "\\`\\|class \\|def "))
+      nil)))
+
 (defun python-font-lock-syntactic-face-function (state)
   (if (nth 3 state)
-      (let ((startpos (nth 8 state)))
-        (save-excursion
-          (goto-char startpos)
-          (if (and (looking-at-p "'''\\|\"\"\"")
-                   (looking-back "\\(?:\\`\\|^\\s *\\(?:class\\|def\\)\\s +.*\\)\n*\\(?:\\s *#\\s *.*\n\\)*\\s *"))
-              font-lock-doc-face
-            font-lock-string-face)))
+      (if (python-docstring-at-p (nth 8 state))
+          font-lock-doc-face
+        font-lock-string-face)
     font-lock-comment-face))
 
 (defvar python-font-lock-keywords
