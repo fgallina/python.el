@@ -1,5 +1,9 @@
 This package contains python.el
 
+This repository mirrors the python.el contained in the GNU/Emacs
+emacs-24 bzr branch (future Emacs 24.3). Compatibility of this branch
+is ensured for Emacs 24.x versions.
+
 * Info
 
   + Author: Fabián Ezequiel Gallina
@@ -59,9 +63,7 @@ This package contains python.el
 
 * Requirements
 
-  This package was tested with GNU/Emacs 23 only, it should work with
-  others versions too but I can't ensure anything. Besides from that
-  nothing else is required.
+  Any Emacs 24.x.
 
 * Installation/Usage
 
