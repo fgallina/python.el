@@ -1,5 +1,11 @@
 This package contains python.el
 
+This package is a mirror of the current GNU/Emacs trunk so DON'T
+EXPECT IT TO WORK on Emacs 24.x (yet). Compatibility work will take
+place after Emacs 24.3 release (where this python.el is included). If
+you use an Emacs 24 version less than 24.3 try the emacs-24 branch
+instead.
+
 * Info
 
   + Author: Fabián Ezequiel Gallina
@@ -59,9 +65,7 @@ This package contains python.el
 
 * Requirements
 
-  This package was tested with GNU/Emacs 23 only, it should work with
-  others versions too but I can't ensure anything. Besides from that
-  nothing else is required.
+  Emacs development version.
 
 * Installation/Usage
 
