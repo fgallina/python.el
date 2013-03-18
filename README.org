@@ -1,8 +1,11 @@
 This package contains python.el
 
-This repository mirrors the python.el contained in the GNU/Emacs
-emacs-24 bzr branch (future Emacs 24.3). Compatibility of this branch
-is ensured for Emacs 24.x versions.
+This repository mirrors the python.el contained in the GNU Emacs
+emacs-24 bzr branch. Compatibility of this branch is ensured for Emacs
+24.x versions.
+
+Emacs 24.3 released on March 11, 2013, shipping python.el up to commit
+2b62af6.
 
 * Info
 
