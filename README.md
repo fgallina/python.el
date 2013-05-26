@@ -6,7 +6,7 @@ maintained.
 ## Info
 
 + Author: Fabián Ezequiel Gallina
-+ Contact: fabian at gnu dot org
++ Contact: fgallina at gnu dot org
 + Project homepage: http://github.com/fgallina/python.el
 + My Blog: http://www.from-the-cloud.com
 + IRC: #python.el at freenode!
