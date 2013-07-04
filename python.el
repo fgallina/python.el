@@ -1740,16 +1740,17 @@ OUTPUT is a string with the contents of the buffer."
 (defvar python-shell--parent-buffer nil)
 
 (defvar python-shell-output-syntax-table
-  (let ((table (make-syntax-table python-dotty-syntax-table)))
-    (modify-syntax-entry ?\' "." table)
-    (modify-syntax-entry ?\" "." table)
-    (modify-syntax-entry ?\( "." table)
-    (modify-syntax-entry ?\[ "." table)
-    (modify-syntax-entry ?\{ "." table)
-    (modify-syntax-entry ?\) "." table)
-    (modify-syntax-entry ?\] "." table)
-    (modify-syntax-entry ?\} "." table)
-    table)
+  python-dotty-syntax-table
+  ;; (let ((table (make-syntax-table python-dotty-syntax-table)))
+  ;;   (modify-syntax-entry ?\' "." table)
+  ;;   (modify-syntax-entry ?\" "." table)
+  ;;   (modify-syntax-entry ?\( "." table)
+  ;;   (modify-syntax-entry ?\[ "." table)
+  ;;   (modify-syntax-entry ?\{ "." table)
+  ;;   (modify-syntax-entry ?\) "." table)
+  ;;   (modify-syntax-entry ?\] "." table)
+  ;;   (modify-syntax-entry ?\} "." table)
+  ;;   table)
   "Syntax table for shell output.
 It makes parens and quotes be treated as punctuation chars.")
 
