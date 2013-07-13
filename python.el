@@ -3151,7 +3151,9 @@ With optional argument POS, check that line at that position instead."
                   (python-syntax-context 'paren)
                   (not (equal (char-before (point)) ?\\)))
         (forward-line 1))
-      (char-equal (char-before) ?\\))))
+      (if (char-equal (char-before) ?\\)
+        (point)
+        nil))))
 
 (defun python-info-beginning-of-backslash (&optional pos)
   "Return the point where the backslashed line start.
