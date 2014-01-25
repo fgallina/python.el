@@ -3155,7 +3155,7 @@ With optional argument POS, check that line at that position instead."
         (point)
         nil))))
 
-(defun python-info-beginning-of-backslash (&optional pos)
+(defun python-info-beginning-of-backslash (&optional line-number)
   "Return the point where the backslashed line start.
 Optional argument POS specifies to check line at that position."
   (save-excursion
