@@ -17,52 +17,60 @@ Donations welcome!
 
 ## Install
 
-If you are using Emacs 24.3 you already have a version of
-python.el. If you are using an Emacs 24.x prior 24.3 or you want to
-update your copy with some of the enhancements happening on Emacs'
-repository you can download python.el from the following URLs:
-
-+ from Emacs' emacs-24 branch: <http://repo.or.cz/w/emacs.git/blob_plain/refs/heads/emacs-24:/lisp/progmodes/python.el>
-+ from Emacs' trunk branch: <http://repo.or.cz/w/emacs.git/blob_plain/master:/lisp/progmodes/python.el>
-
-The trunk version does its best to keep compatible with Emacs 24.x but
-it may break, although fixing compatibility breakage is priority (fill
-a bug report if you happen to find this).
-
-Put `python.el` where you place all your Emacs Lisp files and
-byte-compile it. One way to do it is to visit the file with Emacs and
-then issue `M-x byte-compile-file`
-
-After that add the following to your `.emacs`:
+If you are using Emacs 24.3 you already have a version of python.el.
+If you are using an Emacs 24.x prior 24.3 or you want to update your
+copy with some of the enhancements happening on Emacs add the
+following snippet in your `.emacs`:
 
 ```emacs-lisp
-(add-to-list 'load-path "/folder/containing/file")  ;; if it's not already in `load-path'
-(require 'python)
+
+(add-to-list 'load-path user-emacs-directory)
+
+(defun my:ensure-python.el (&optional branch overwrite)
+  "Install python.el from BRANCH.
+After the first install happens the file is not overwritten again
+unless the optional argument OVERWRITE is non-nil.  When called
+interactively python.el will always be overwritten with the
+latest version."
+  (interactive
+   (list
+    (completing-read "Install python.el from branch: "
+                     (list "master" "emacs-24")
+                     nil t)
+    t))
+  (let* ((branch (or branch "master"))
+         (url (format
+               (concat "http://git.savannah.gnu.org/cgit/emacs.git/plain"
+                       "/lisp/progmodes/python.el?h=%s") branch))
+         (destination (expand-file-name "python.el" user-emacs-directory))
+         (write (or (not (file-exists-p destination)) overwrite)))
+    (when write
+      (with-current-buffer
+          (url-retrieve-synchronously url)
+        (delete-region (point-min) (1+ url-http-end-of-headers))
+        (write-file destination))
+      (byte-compile-file destination t)
+      destination)))
+
+(my:ensure-python.el)
 ```
 
-The most simple installation option is to use
-[el-get](https://github.com/dimitri/el-get) and add either `python` or
-`python24` to your list of packages.
+The `master` branch does its best to remain compatible with Emacs 24.x
+but it may break, although fixing compatibility breakage is priority
+(fill a bug report if you happen to find this).  The "emacs-24" tends
+to be safer but new features are not added into it.
 
-In case your el-get recipes are outdated you can append the following
-to your `el-get-sources` depending on the version you prefer:
+Whatever flavor you choose, if you are using a version prior to Emacs
+24.3 you need `cl-lib`[0] which is available from GNU ELPA[1] package
+archive.
 
-```emacs-lisp
-(:name python
-       :description "Python's flying circus support for Emacs (trunk version, hopefully Emacs 24.x compatible)"
-       :type http
-       :url "http://repo.or.cz/w/emacs.git/blob_plain/master:/lisp/progmodes/python.el")
-```
+[0] http://elpa.gnu.org/packages/cl-lib.html
+[1] http://elpa.gnu.org/
 
-OR
+### Alternate method with el-get
 
-```emacs-lisp
-(:name python24
-       :description "Python's flying circus support for Emacs (24.x)"
-       :builtin "24.3"
-       :type http
-       :url "http://repo.or.cz/w/emacs.git/blob_plain/refs/heads/emacs-24:/lisp/progmodes/python.el")
-```
+If you are using el-get already you can install `python24` for the
+current `emacs-24` branch version or `python` for the `master` branch.
 
 ## Introduction
 
